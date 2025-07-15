@@ -20,19 +20,42 @@ const app = express();
 // Connect to Database
 connectDB();
 
+// Configure allowed origins
+const allowedOrigins = [
+  'https://personal-notes-and-bookmark.vercel.app',
+  'http://localhost:3000' // For local development
+];
+
 const corsOptions = {
-  origin: process.env.NODE_ENV === 'production'
-    ? process.env.FRONTEND_URL
-    : 'http://localhost:3000',
-  credentials: true,
-  optionsSuccessStatus: 200
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 };
 
-// Middleware
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
+
+// Add this middleware in app.js before your routes
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', 'https://personal-notes-and-bookmark.vercel.app');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  next();
+});
 
 // Routes - add error handling
 try {

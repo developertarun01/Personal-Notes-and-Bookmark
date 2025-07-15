@@ -1,19 +1,17 @@
+const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const { validationResult } = require('express-validator');
+
 exports.register = async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ errors: errors.array() });
   }
 
-  const { email, password } = req.body;
-
   try {
-    // Check database connection first
-    if (mongoose.connection.readyState !== 1) {
-      throw new Error('Database not connected');
-    }
+    const { email, password } = req.body;
+    let user = await User.findOne({ email });
 
-    let user = await User.findOne({ email }).maxTimeMS(30000); // 30s timeout
-    
     if (user) {
       return res.status(400).json({ msg: 'User already exists' });
     }
@@ -26,16 +24,34 @@ exports.register = async (req, res, next) => {
 
     res.status(201).json({ token });
   } catch (err) {
-    console.error('Registration error:', err.message);
-    
-    // Specific error handling
-    if (err.message.includes('timed out')) {
-      return res.status(503).json({ msg: 'Database timeout' });
+    next(err);
+  }
+};
+
+exports.login = async (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(400).json({ msg: 'Invalid credentials' });
     }
-    if (err.message.includes('not connected')) {
-      return res.status(503).json({ msg: 'Database unavailable' });
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Invalid credentials' });
     }
-    
-    res.status(500).json({ msg: 'Server error' });
+
+    const payload = { userId: user._id };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+    res.json({ token });
+  } catch (err) {
+    next(err);
   }
 };

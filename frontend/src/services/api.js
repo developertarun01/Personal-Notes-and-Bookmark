@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: process.env.NODE_ENV === 'production'
-    ? 'https://your-backend-domain.com/api'  // Production backend
+    ? 'https://personal-notes-and-bookmark-api.vercel.app/api'  // Production backend
     : 'http://localhost:5000/api'           // Development backend
 });
 

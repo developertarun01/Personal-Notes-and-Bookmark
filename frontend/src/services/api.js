@@ -1,7 +1,9 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || 'https://personal-notes-and-bookmark-api.vercel.app/api',
+  baseURL: process.env.NODE_ENV === 'production'
+    ? 'https://your-backend-domain.com/api'  // Production backend
+    : 'http://localhost:5000/api'           // Development backend
 });
 
 // Request interceptor to add auth token
